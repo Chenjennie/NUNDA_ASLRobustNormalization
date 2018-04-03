@@ -136,6 +136,6 @@ catch err
     for k=1:length(err.stack)
         fprintf('In %s at %d\n',err.stack(k).file,err.stack(k).line);
     end
-    %exit;
+    exit;
 end
 return;
