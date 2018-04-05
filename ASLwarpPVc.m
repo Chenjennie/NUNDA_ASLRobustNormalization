@@ -38,30 +38,39 @@ try
         %2) Calculate GM/WM & nat2tpl field with VBM
         %3) warp CBF and lesionmask to tpl space
         %load('/projects/p20394/software/matlab/warp.mat');%replace with NUNDA location
-        load('/projects/p20394/software/pipeline_external/DEV_StdASL/coreg.mat');
-        matlabbatch{1,1}.spm.spatial.coreg.estimate.ref{1}=head;
-        matlabbatch{1,1}.spm.spatial.coreg.estimate.source{1}=T1ASL;
-        matlabbatch{1,1}.spm.spatial.coreg.estimate.other=cellstr(CBF);
+        %load('/projects/p20394/software/pipeline_external/DEV_StdASL/coreg.mat');
+        load('/home/yfc938/software/coreg.mat');
+        matlabbatch{1,1}.spm.spatial.coreg.estwrite.ref{1}=head;
+        matlabbatch{1,1}.spm.spatial.coreg.estwrite.source{1}=T1ASL;
+        matlabbatch{1,1}.spm.spatial.coreg.estwrite.other=cellstr(CBF);
         if ~isempty(real_lesion)
-            matlabbatch=cat(2,matlabbatch{1,1},matlabbatch{1,1});
+            matlabbatch={matlabbatch{1,1},matlabbatch{1,1}};
             %matlabbatch{1,2}.spm.spatial.coreg.estimate.ref{1}=head;
-            matlabbatch{1,2}.spm.spatial.coreg.estimate.source{1}=realT1;
-            matlabbatch{1,2}.spm.spatial.coreg.estimate.other=cellstr(realles);end
-        test2=load('/projects/p20394/software/pipeline_external/DEV_StdASL/VBMest.mat');
+            matlabbatch{1,2}.spm.spatial.coreg.estwrite.source{1}=realT1;
+            matlabbatch{1,2}.spm.spatial.coreg.estwrite.other=cellstr(realles);
+        end
+        %test2=load('/projects/p20394/software/pipeline_external/DEV_StdASL/VBMest.mat');
+        test2=load('/home/yfc938/software/VBMest.mat');
         matlabbatch=cat(2,matlabbatch,test2.matlabbatch{1,1});
         matlabbatch{1,end}.spm.tools.vbm8.estwrite.data{1,1}=head;
-
+        
         try
             spm_jobman('initcfg');
             spm_jobman('run_nogui',matlabbatch);
         end
+        
+        CBF=spm_select('FPList',deblank(ASLoutput),'^r.*qCBF.*nii');
         clear matlabbatch;
-        matlabbatch{1,1}=test2.matlabbatch{1,2};
+        matlabbatch=test2.matlabbatch(2);
         matlabbatch{1,1}.spm.tools.vbm8.tools.defs.field1=cellstr(spm_select('FPList',smri_directory,'^y_rhead.nii$'));
+        matlabbatch{1,1}.spm.tools.vbm8.tools.defs.images=cellstr(CBF);
         if ~isempty(real_lesion)
-            matlabbatch{1,1}.spm.tools.vbm8.tools.defs.images=cat(1,cellstr(CBF),cellstr(realles));
-        else
-            matlabbatch{1,1}.spm.tools.vbm8.tools.defs.images=cellstr(CBF);
+            realT1=spm_select('FPList',deblank(real_lesion),'^rT1.nii$');
+            matlabbatch{1,1}.spm.tools.vbm8.tools.defs.images=cat(1,cellstr(CBF),cellstr(realT1));
+            matlabbatch={matlabbatch{1,1},test2.matlabbatch{1,3}};
+            matlabbatch{1,2}.spm.tools.vbm8.tools.defs.field1=cellstr(spm_select('FPList',smri_directory,'^y_rhead.nii$'));
+            realles=spm_select('FPList',real_lesion,'^rlesion.*nii');
+            matlabbatch{1,2}.spm.tools.vbm8.tools.defs.images=cellstr(realles);
         end
         
         try
@@ -72,10 +81,11 @@ try
         %Locate the warped template space tissue & brain masks
         GM=spm_read_vols(spm_vol(spm_select('FPList',smri_directory,'^wrp1.*.nii$')));
         WM=spm_read_vols(spm_vol(spm_select('FPList',smri_directory,'^wrp2.*.nii$')));
-        brain=GM+WM;brain(find(brain<0.5))=0;brain(find(brain))=1;
+        CSF=spm_read_vols(spm_vol(spm_select('FPList',smri_directory,'^wrp3.*.nii$')));
+        brain=GM+WM+CSF;brain(find(brain<0.5))=0;brain(find(brain))=1;
         brain(isnan(brain))=0;
         %located the template space ASL file and mask to >5
-        ASLf=cellstr(spm_select('FPList',deblank(ASLoutput),'^w.*qCBF.*nii$'));
+        ASLf=cellstr(spm_select('FPList',deblank(ASLoutput),'^wr.*qCBF.*nii$'));
         test=cellfun(@isempty,strfind(ASLf,'_PVc'));ASLf(find(test==0))=[];
         ASL=spm_read_vols(spm_vol(char(ASLf)));
         ASL(isnan(ASL))=0;
@@ -104,10 +114,14 @@ try
         ASL_PV(find(sGM<0.3))=0;ASL_PV(find(sGM>=0.3))=ASL_PV(find(sGM>=.3))./sGM(find(sGM>=0.3));
         ASL_PV(isnan(ASL_PV))=0;
         if ~isempty(real_lesion)
-            lesmask=spm_read_vols(spm_vol(spm_select('FPList',real_lesion,'wlesionmask.nii$')));
-            lesmask(isnan(lesmask))=0;lesmask(find(lesmask<0.96))=0;lesmask(find(lesmask))=1;
-            copyfile(spm_select('FPList',real_lesion,'wlesionmask.nii$'),normfolder);
-            brain(find(lesmask))=0;
+            copyfile(spm_select('FPList',real_lesion,'^wrT1.nii$'),normfolder);
+            V=spm_vol(spm_select('FPList',real_lesion,'wrlesionmask.nii$'));
+            lesmask=spm_read_vols(V);
+            lesmask(isnan(lesmask))=0;%lesmask(find(abs(lesmask)<0.01))=0;lesmask(find(lesmask))=1;
+            lesmask(find(brain==0))=0;%lesmask=spm_erode(spm_dilate(lesmask));
+            V.fname=fullfile(normfolder,'wrlesionmask.nii');V.descrip='lesion mask masked by brain>0.5 and SPMdilate&eroded';
+            spm_create_vol(V);spm_write_vol(V,lesmask);
+            brain(find(lesmask))=0;brain(find(CSF))=0;
             ASL_PV(find(lesmask))=0;
         end
         V=spm_vol(char(ASLf));
@@ -136,6 +150,6 @@ catch err
     for k=1:length(err.stack)
         fprintf('In %s at %d\n',err.stack(k).file,err.stack(k).line);
     end
-    exit;
+    %exit;
 end
 return;
