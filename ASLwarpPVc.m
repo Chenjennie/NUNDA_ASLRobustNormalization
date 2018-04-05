@@ -38,8 +38,8 @@ try
         %2) Calculate GM/WM & nat2tpl field with VBM
         %3) warp CBF and lesionmask to tpl space
         %load('/projects/p20394/software/matlab/warp.mat');%replace with NUNDA location
-        %load('/projects/p20394/software/pipeline_external/DEV_StdASL/coreg.mat');
-        load('/home/yfc938/software/coreg.mat');
+        load('/projects/p20394/software/pipeline_external/DEV_StdASL/coreg.mat');
+      %  load('/home/yfc938/software/coreg.mat');
         matlabbatch{1,1}.spm.spatial.coreg.estwrite.ref{1}=head;
         matlabbatch{1,1}.spm.spatial.coreg.estwrite.source{1}=T1ASL;
         matlabbatch{1,1}.spm.spatial.coreg.estwrite.other=cellstr(CBF);
@@ -49,8 +49,8 @@ try
             matlabbatch{1,2}.spm.spatial.coreg.estwrite.source{1}=realT1;
             matlabbatch{1,2}.spm.spatial.coreg.estwrite.other=cellstr(realles);
         end
-        %test2=load('/projects/p20394/software/pipeline_external/DEV_StdASL/VBMest.mat');
-        test2=load('/home/yfc938/software/VBMest.mat');
+        test2=load('/projects/p20394/software/pipeline_external/DEV_StdASL/VBMest.mat');
+        %test2=load('/home/yfc938/software/VBMest.mat');
         matlabbatch=cat(2,matlabbatch,test2.matlabbatch{1,1});
         matlabbatch{1,end}.spm.tools.vbm8.estwrite.data{1,1}=head;
         
