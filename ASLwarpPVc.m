@@ -16,7 +16,7 @@ try
             delete(spm_select('FPList',char(ASLoutput),'FOVmask.nii$'));
         end
         if ~isempty(spm_select('FPList',char(ASLoutput),'.*PVc.*'))
-            delete(spm_select('FPList',char(ASLoutput),'.*PVc.*'))
+            delete(fullfile(char(ASLoutput),'*PVc*'))
         end
         
         mkdir(fullfile(char(ASLoutput),'Normalized'));
