@@ -64,7 +64,8 @@ try
         matlabbatch=cat(2,matlabbatch,test2.matlabbatch{1,1});
         matlabbatch{1,end}.spm.tools.vbm8.estwrite.data{1,1}=head;
         matlabbatch{1,end}.spm.tools.vbm8.estwrite.extopts.dartelwarp.normhigh.darteltpm   = {which('Template_1_IXI550_MNI152.nii')};
-        matlabbatch{1,end}.spm.tools.vbm8.estwrite.opts.tpm = {which('Seg/TPM.nii')};
+        [pth,nm]=fileparts(which('Template_1_IXI550_MNI152.nii'));
+        matlabbatch{1,end}.spm.tools.vbm8.estwrite.opts.tpm = {fullfile(pth,'..','Seg/TPM.nii')};
         matlabbatch{1,end}.spm.tools.vbm8.estwrite.extopts.dartelwarp.normhigh.darteltpm
         matlabbatch{1,end}.spm.tools.vbm8.estwrite.opts.tpm
         try
