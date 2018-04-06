@@ -65,7 +65,7 @@ try
         matlabbatch{1,end}.spm.tools.vbm8.estwrite.data{1,1}=head;
         matlabbatch{1,end}.spm.tools.vbm8.estwrite.extopts.dartelwarp.normhigh.darteltpm   = {which('Template_1_IXI550_MNI152.nii')};
         [pth,nm]=fileparts(which('Template_1_IXI550_MNI152.nii'));
-        if exist(fullfile(pth,'..','Seq/TPM.nii'),'file')==2
+        if exist(fullfile(pth,'..','Seg/TPM.nii'),'file')==2
             matlabbatch{1,end}.spm.tools.vbm8.estwrite.opts.tpm = {fullfile(pth,'..','Seg/TPM.nii')};
         else
             matlabbatch{1,end}.spm.tools.vbm8.estwrite.opts.tpm = {which('TPM.nii')};
