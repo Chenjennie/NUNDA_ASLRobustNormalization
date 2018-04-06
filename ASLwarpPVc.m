@@ -74,7 +74,7 @@ try
         matlabbatch{1,end}.spm.tools.vbm8.estwrite.opts.tpm
         try
             spm_jobman('initcfg');
-            spm_jobman('run_nogui',matlabbatch);
+            spm_jobman('run',matlabbatch);
         end
         
         CBF=spm_select('FPList',deblank(ASLoutput),'^r.*qCBF.*nii');
@@ -93,7 +93,7 @@ try
         
         try
             spm_jobman('initcfg');
-            spm_jobman('run_nogui',matlabbatch);
+            spm_jobman('run',matlabbatch);
         end
         
         %Locate the warped template space tissue & brain masks
