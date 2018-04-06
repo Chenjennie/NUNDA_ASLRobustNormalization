@@ -63,10 +63,10 @@ try
         %test2=load('/home/yfc938/software/VBMest.mat'); %for QUEST
         matlabbatch=cat(2,matlabbatch,test2.matlabbatch{1,1});
         matlabbatch{1,end}.spm.tools.vbm8.estwrite.data{1,1}=head;
-        matlabbatch{1}.spm.tools.vbm8.estwrite.extopts.dartelwarp.normhigh.darteltpm   = {which('Template_1_IXI550_MNI152.nii')};
-        matlabbatch{1}.spm.tools.vbm8.estwrite.opts.tpm = {which('TPM.nii')};
-        matlabbatch{1}.spm.tools.vbm8.estwrite.extopts.dartelwarp.normhigh.darteltpm
-        matlabbatch{1}.spm.tools.vbm8.estwrite.opts.tpm
+        matlabbatch{1,end}.spm.tools.vbm8.estwrite.extopts.dartelwarp.normhigh.darteltpm   = {which('Template_1_IXI550_MNI152.nii')};
+        matlabbatch{1,end}.spm.tools.vbm8.estwrite.opts.tpm = {which('Seg/TPM.nii')};
+        matlabbatch{1,end}.spm.tools.vbm8.estwrite.extopts.dartelwarp.normhigh.darteltpm
+        matlabbatch{1,end}.spm.tools.vbm8.estwrite.opts.tpm
         try
             spm_jobman('initcfg');
             spm_jobman('run_nogui',matlabbatch);
