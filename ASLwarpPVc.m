@@ -10,6 +10,15 @@ disp(sprintf('ASLdir=%s...\n',asl_base))
 try
     for resource= dir(sprintf('%s/sequence*',asl_base))
         ASLoutput = sprintf('%s/%s',asl_base,resource.name);
+        
+        %cleanup ASLoutput
+        if ~isempty(spm_select('FPList',char(ASLoutput),'FOVmask.nii$')) 
+            delete(spm_select('FPList',char(ASLoutput),'FOVmask.nii$'));
+        end
+        if ~isempty(spm_select('FPList',char(ASLoutput),'.*PVc.*'))
+            delete(spm_select('FPList',char(ASLoutput),'.*PVc.*'))
+        end
+        
         mkdir(fullfile(char(ASLoutput),'Normalized'));
         normfolder=fullfile(char(ASLoutput),'Normalized');
         %locate files in real_lesion
@@ -37,9 +46,9 @@ try
         %1) coregistration of T1ASL & T1lesmask to head.nii
         %2) Calculate GM/WM & nat2tpl field with VBM
         %3) warp CBF and lesionmask to tpl space
-        %load('/projects/p20394/software/matlab/warp.mat');%replace with NUNDA location
-        load('/projects/p20394/software/pipeline_external/ASL_RobustNormalization/coreg.mat');
-      %  load('/home/yfc938/software/coreg.mat');
+        %load('/projects/p20394/software/pipeline_external/ASL_RobustNormalization/coreg.mat'); %hardcode path
+        load(which('ASLRN_coreg.mat'));
+      %  load('/home/yfc938/software/coreg.mat'); %for QUEST
         matlabbatch{1,1}.spm.spatial.coreg.estwrite.ref{1}=head;
         matlabbatch{1,1}.spm.spatial.coreg.estwrite.source{1}=T1ASL;
         matlabbatch{1,1}.spm.spatial.coreg.estwrite.other=cellstr(CBF);
@@ -49,10 +58,13 @@ try
             matlabbatch{1,2}.spm.spatial.coreg.estwrite.source{1}=realT1;
             matlabbatch{1,2}.spm.spatial.coreg.estwrite.other=cellstr(realles);
         end
-        test2=load('/projects/p20394/software/pipeline_external/ASL_RobustNormalization/VBMest.mat');
-        %test2=load('/home/yfc938/software/VBMest.mat');
+        %test2=load('/projects/p20394/software/pipeline_external/ASL_RobustNormalization/VBMest.mat');%hardcode path
+        test2=load(which('ASLRN_VBMest.mat'));
+        %test2=load('/home/yfc938/software/VBMest.mat'); %for QUEST
         matlabbatch=cat(2,matlabbatch,test2.matlabbatch{1,1});
         matlabbatch{1,end}.spm.tools.vbm8.estwrite.data{1,1}=head;
+        matlabbatch{1}.spm.tools.vbm8.estwrite.extopts.dartelwarp.normhigh.darteltpm   = {which('Template_1_IXI550_MNI152.nii')};
+        matlabbatch{1}.spm.tools.vbm8.estwrite.opts.tpm = {which('TPM.nii')};
         
         try
             spm_jobman('initcfg');
