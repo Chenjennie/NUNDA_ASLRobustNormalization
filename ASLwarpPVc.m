@@ -40,7 +40,10 @@ try
         T1ASL=spm_select('FPList',deblank(ASLoutput),'^T1.nii');
         
         %locate desired files in RobustOUtput
-        head=spm_select('FPList',smri_directory,'^head.nii$');%replace smri_directory with temporary folder in which the tar file contents are located
+        %head=spm_select('FPList',smri_directory,'^head.nii$');
+        if ~isempty(spm_select('FPList',smri_directory,'^head.nii$'))
+        copyfile(spm_select('FPList',smri_directory,'^head.nii$'),deblank(ASLoutput));
+        head=spm_select('FPList',deblank(ASLoutput),'^head.nii$');end
         
         %load matlabbatch file and perform
         %1) coregistration of T1ASL & T1lesmask to head.nii
@@ -80,16 +83,16 @@ try
         CBF=spm_select('FPList',deblank(ASLoutput),'^r.*qCBF.*nii');
         clear matlabbatch;
         
-        spm_select('FPList',smri_directory,'^y_rhead.nii$')
+        spm_select('FPList',deblank(ASLoutput),'^y_rhead.nii$')
         
         matlabbatch=test2.matlabbatch(2);
-        matlabbatch{1,1}.spm.tools.vbm8.tools.defs.field1=cellstr(spm_select('FPList',smri_directory,'^y_rhead.nii$'));
+        matlabbatch{1,1}.spm.tools.vbm8.tools.defs.field1=cellstr(spm_select('FPList',deblank(ASLoutput),'^y_rhead.nii$'));
         matlabbatch{1,1}.spm.tools.vbm8.tools.defs.images=cellstr(CBF);
         if ~isempty(real_lesion)
             realT1=spm_select('FPList',deblank(real_lesion),'^rT1.nii$');
             matlabbatch{1,1}.spm.tools.vbm8.tools.defs.images=cat(1,cellstr(CBF),cellstr(realT1));
             matlabbatch={matlabbatch{1,1},test2.matlabbatch{1,3}};
-            matlabbatch{1,2}.spm.tools.vbm8.tools.defs.field1=cellstr(spm_select('FPList',smri_directory,'^y_rhead.nii$'));
+            matlabbatch{1,2}.spm.tools.vbm8.tools.defs.field1=cellstr(spm_select('FPList',deblank(ASLoutput),'^y_rhead.nii$'));
             realles=spm_select('FPList',real_lesion,'^rlesion.*nii');
             matlabbatch{1,2}.spm.tools.vbm8.tools.defs.images=cellstr(realles);
         end
@@ -100,9 +103,9 @@ try
         end
         
         %Locate the warped template space tissue & brain masks
-        GM=spm_read_vols(spm_vol(spm_select('FPList',smri_directory,'^wrp1.*.nii$')));
-        WM=spm_read_vols(spm_vol(spm_select('FPList',smri_directory,'^wrp2.*.nii$')));
-        CSF=spm_read_vols(spm_vol(spm_select('FPList',smri_directory,'^wrp3.*.nii$')));
+        GM=spm_read_vols(spm_vol(spm_select('FPList',deblank(ASLoutput),'^wrp1.*.nii$')));
+        WM=spm_read_vols(spm_vol(spm_select('FPList',deblank(ASLoutput),'^wrp2.*.nii$')));
+        CSF=spm_read_vols(spm_vol(spm_select('FPList',deblank(ASLoutput),'^wrp3.*.nii$')));
         brain=GM+WM+CSF;brain(find(brain<0.5))=0;brain(find(brain))=1;
         brain(isnan(brain))=0;
         %located the template space ASL file and mask to >5
@@ -119,7 +122,7 @@ try
         %Limit calculations to GM>=0.3 to minimize elevated values due to division
         %by small numbers
         sGM(find(sGM<0.3))=0;
-        V=spm_vol(spm_select('FPList',smri_directory,'^wrp1.*.nii$'));
+        V=spm_vol(spm_select('FPList',deblank(ASLoutput),'^wrp1.*.nii$'));
         [pth,nm,ext]=fileparts(V.fname);
         V.fname=fullfile(normfolder,['wsGM',ext]);
         V.descrip='smoothed GM probability > 0.3';
@@ -158,8 +161,8 @@ try
         V.fname=fullfile(normfolder,['FOVmask',ext]);spm_create_vol(V);spm_write_vol(V,FOV);
         
         %copy files to ASLoutput
-        copyfile(spm_select('FPList',smri_directory,'^wrp1.*.nii$'),normfolder);
-        copyfile(spm_select('FPList',smri_directory,'^y_rhead.nii$'),normfolder);
+        copyfile(spm_select('FPList',deblank(ASLoutput),'^wrp1.*.nii$'),normfolder);
+        copyfile(spm_select('FPList',deblank(ASLoutput),'^y_rhead.nii$'),normfolder);
         % ASL_PV=ASL;ASL_PV(find(sGM<0.3))=0;
         % ASL_PV(find(sGM>=0.3))=ASL_PV(find(sGM>=.3))./(sGM(find(sGM>=0.3))+0.4*sWM(find(sGM>=0.3)));
         % V.fname=fullfile(pth,[nm,'_PVcPET',ext]);V.descrip='Partial volume corrected (GM>=0.3) qCBF based on GM:WM=2.5';
