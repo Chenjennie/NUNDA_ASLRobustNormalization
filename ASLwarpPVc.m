@@ -79,6 +79,9 @@ try
         
         CBF=spm_select('FPList',deblank(ASLoutput),'^r.*qCBF.*nii');
         clear matlabbatch;
+        
+        spm_select('FPList',smri_directory,'^y_rhead.nii$')
+        
         matlabbatch=test2.matlabbatch(2);
         matlabbatch{1,1}.spm.tools.vbm8.tools.defs.field1=cellstr(spm_select('FPList',smri_directory,'^y_rhead.nii$'));
         matlabbatch{1,1}.spm.tools.vbm8.tools.defs.images=cellstr(CBF);
@@ -137,7 +140,7 @@ try
             lesmask=spm_read_vols(V);
             lesmask(isnan(lesmask))=0;%lesmask(find(abs(lesmask)<0.01))=0;lesmask(find(lesmask))=1;
             lesmask(find(brain==0))=0;%lesmask=spm_erode(spm_dilate(lesmask));
-            V.fname=fullfile(normfolder,'wrlesionmask.nii');V.descrip='lesion mask masked by brain>0.5 and SPMdilate&eroded';
+            V.fname=fullfile(normfolder,'wrlesionmask.nii');V.descrip='lesion mask masked by brain>0.5';
             spm_create_vol(V);spm_write_vol(V,lesmask);
             brain(find(lesmask))=0;brain(find(CSF))=0;
             ASL_PV(find(lesmask))=0;
