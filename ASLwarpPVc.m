@@ -1,11 +1,11 @@
 %updated 4/3/2018 to include optional hand-drawn lesion mask. If left empty
 %script will just use smri_dir & asl_base to perform PVc on ASL data
-function ASLwarpPVcgitnew(real_lesion, smri_directory, asl_base)
+function ASLwarpPVc(real_lesion, smri_directory, asl_base)
 
 disp(sprintf('Running ASL_RobustNormalization pipeline, date=%s...\n',datestr(now)))
-disp(sprintf('real_lesion=%s...\n',real_lesion))
-disp(sprintf('SMRIdir=%s...\n',smri_directory))
-disp(sprintf('ASLdir=%s...\n',asl_base))
+disp(sprintf('real_lesion=%s\n',real_lesion))
+disp(sprintf('SMRIdir=%s\n',smri_directory))
+disp(sprintf('ASLdir=%s\n',asl_base))
 
 try
     for resource= dir(sprintf('%s/sequence*',asl_base))
@@ -91,7 +91,7 @@ try
         CBF=spm_select('FPList',wdir,'^r.*qCBF.*nii');
         clear matlabbatch;
         
-        spm_select('FPList',wdir,'^y_rhead.nii$')
+        %spm_select('FPList',wdir,'^y_rhead.nii$')
         
         matlabbatch=test2.matlabbatch(2);
         matlabbatch{1,1}.spm.tools.vbm8.tools.defs.field1=cellstr(spm_select('FPList',wdir,'^y_rhead.nii$'));
@@ -126,7 +126,7 @@ try
         %smoothness
         sGM=zeros(size(GM));spm_smooth(GM,sGM, nat_res);
         sWM=zeros(size(WM));spm_smooth(WM,sWM, nat_res);
-        sWM99=sWM;sWM99(find(sWM99<0.99))=0;sWM99(find(sWM99))=1;
+        %sWM99=sWM;sWM99(find(sWM99<0.99))=0;sWM99(find(sWM99))=1;
         %Limit calculations to GM>=0.3 to minimize elevated values due to division
         %by small numbers
         sGM(find(sGM<0.3))=0;
@@ -135,16 +135,17 @@ try
         V.fname=fullfile(normfolder,['wsGM',ext]);
         V.descrip='smoothed GM probability > 0.3';
         spm_create_vol(V);spm_write_vol(V,sGM);
-        V.fname=fullfile(normfolder,['wsWM99',ext]);
-        V.descrip='smoothed WM mask > 0.99';
-        spm_create_vol(V);spm_write_vol(V,sWM99);
+        V.fname=fullfile(normfolder,['wsWM',ext]);
+        V.descrip='smoothed WM';
+        spm_create_vol(V);spm_write_vol(V,sWM);
         
         %Perform partial volume correction by subtracting Pwm*WM_CBF and then
         %division by Pgm
-        WMCBF=mean(ASL(find(sWM99)));
-        ASL_PV=ASL-sWM*WMCBF;
-        ASL_PV(find(sGM<0.3))=0;ASL_PV(find(sGM>=0.3))=ASL_PV(find(sGM>=.3))./sGM(find(sGM>=0.3));
+        ASL_PV=ASL;
+        ASL_PV(find(sGM<0.3))=0;
+        ASL_PV(find(sGM>=0.3))=ASL_PV(find(sGM>=.3))./(sGM(find(sGM>=0.3))+0.4*sWM(find(sGM>=0.3)));
         ASL_PV(isnan(ASL_PV))=0;
+
         if ~isempty(real_lesion)
             copyfile(spm_select('FPList',wdir,'^wrlesionT1.nii$'),normfolder);
             V=spm_vol(spm_select('FPList',wdir,'wrlesionmask.nii$'));
@@ -170,7 +171,11 @@ try
         
         %copy files to ASLoutput
         copyfile(spm_select('FPList',wdir,'^wrp1.*.nii$'),normfolder);
+        copyfile(spm_select('FPList',wdir,'^wrp2.*.nii$'),normfolder);
         copyfile(spm_select('FPList',wdir,'^y_rhead.nii$'),normfolder);
+        
+        copyfile(spm_select('FPList',wdir,'^phead_seg8.txt$'),normfolder);
+        copyfile(spm_select('FPList',wdir,'^head_seg8.mat$'),normfolder);
         
         %cleanup
         rmdir(wdir,'s');
