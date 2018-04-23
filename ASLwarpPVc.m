@@ -1,5 +1,7 @@
 %updated 4/3/2018 to include optional hand-drawn lesion mask. If left empty
 %script will just use smri_dir & asl_base to perform PVc on ASL data
+%updated 4/23/18 to include MNI GM mask at 0.3 to minimize segmentation
+%errors due to previous bad lesionmasks
 function ASLwarpPVc(real_lesion, smri_directory, asl_base)
 
 disp(sprintf('Running ASL_RobustNormalization pipeline, date=%s...\n',datestr(now)))
@@ -40,7 +42,7 @@ try
         end
         
         %locate the files in ASLoutput
-        temp=spm_select('FPList',deblank(ASLoutput),'.*qCBF.*nii');temp=temp(1,:);
+        temp=spm_select('FPList',deblank(ASLoutput),'.*qCBF.*nii');temp=deblank(temp(1,:));
         copyfile(temp,wdir);
         CBF=spm_select('FPList',wdir,'.*qCBF.*nii');
         V=spm_vol(CBF);nat_res=abs(diag(V.mat));nat_res=nat_res(1:3)';
@@ -145,6 +147,16 @@ try
         ASL_PV(find(sGM<0.3))=0;
         ASL_PV(find(sGM>=0.3))=ASL_PV(find(sGM>=.3))./(sGM(find(sGM>=0.3))+0.4*sWM(find(sGM>=0.3)));
         ASL_PV(isnan(ASL_PV))=0;
+        
+        %CYF 042318 added MNI GM mask at 0.3 to eliminate segmentation
+        %errors
+        MNIGMf=which('grey.nii');
+        copyfile(MNIGMf,wdir);
+        spm_reslice(char(ASLf{1},fullfile(wdir,'grey.nii')),struct('interp',1,'mask',0,'which',1,'wrap',[1 1 0]))
+        MNIGMf=spm_select('FPList',wdir,'rgrey.nii');
+        MNIGM=spm_read_vols(spm_vol(MNIGMf));
+        MNIGM(find(MNIGM<0.3))=0;MNIGM(find(MNIGM))=1;
+        ASL_PV(find(MNIGM~=1))=0;
 
         if ~isempty(real_lesion)
             copyfile(spm_select('FPList',wdir,'^wrlesionT1.nii$'),normfolder);
