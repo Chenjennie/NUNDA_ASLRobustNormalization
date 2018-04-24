@@ -55,6 +55,8 @@ try
             copyfile(spm_select('FPList',smri_directory,'^head.nii$'),wdir);
             head=spm_select('FPList',wdir,'^head.nii$');end
         
+        
+        
         %load matlabbatch file and perform
         %1) coregistration of T1ASL & T1lesmask to head.nii
         %2) Calculate GM/WM & nat2tpl field with VBM
@@ -71,20 +73,7 @@ try
             matlabbatch{1,2}.spm.spatial.coreg.estwrite.source{1}=realT1;
             matlabbatch{1,2}.spm.spatial.coreg.estwrite.other=cellstr(realles);
         end
-        %test2=load('/projects/p20394/software/pipeline_external/ASL_RobustNormalization/VBMest.mat');%hardcode path
-        test2=load(which('ASLRN_VBMest.mat'));
-        %test2=load('/home/yfc938/software/VBMest.mat'); %for QUEST
-        matlabbatch=cat(2,matlabbatch,test2.matlabbatch{1,1});
-        matlabbatch{1,end}.spm.tools.vbm8.estwrite.data{1,1}=head;
-        matlabbatch{1,end}.spm.tools.vbm8.estwrite.extopts.dartelwarp.normhigh.darteltpm   = {which('Template_1_IXI550_MNI152.nii')};
-        [pth,nm]=fileparts(which('Template_1_IXI550_MNI152.nii'));
-        if exist(fullfile(pth,'..','Seg/TPM.nii'),'file')==2
-            matlabbatch{1,end}.spm.tools.vbm8.estwrite.opts.tpm = {fullfile(pth,'..','Seg/TPM.nii')};
-        else
-            matlabbatch{1,end}.spm.tools.vbm8.estwrite.opts.tpm = {which('TPM.nii')};
-        end
-        matlabbatch{1,end}.spm.tools.vbm8.estwrite.extopts.dartelwarp.normhigh.darteltpm
-        matlabbatch{1,end}.spm.tools.vbm8.estwrite.opts.tpm
+
         try
             spm_jobman('initcfg');
             spm_jobman('run',matlabbatch);
@@ -92,18 +81,18 @@ try
         
         CBF=spm_select('FPList',wdir,'^r.*qCBF.*nii');
         clear matlabbatch;
+
+        load(which('ASLRN_VBMwrite.mat'));
         
         %spm_select('FPList',wdir,'^y_rhead.nii$')
         
-        matlabbatch=test2.matlabbatch(2);
-        matlabbatch{1,1}.spm.tools.vbm8.tools.defs.field1=cellstr(spm_select('FPList',wdir,'^y_rhead.nii$'));
+        matlabbatch{1,1}.spm.tools.vbm8.tools.defs.field1=cellstr(spm_select('FPList',smri_directory,'^anat2tpl.warp.field.nii$'));
         matlabbatch{1,1}.spm.tools.vbm8.tools.defs.images=cellstr(CBF);
         if ~isempty(real_lesion)
-            realT1=spm_select('FPList',wdir,'^rT1.nii$');
+            realT1=spm_select('FPList',wdir,'^rlesionT1.nii$');
             matlabbatch{1,1}.spm.tools.vbm8.tools.defs.images=cat(1,cellstr(CBF),cellstr(realT1));
-            matlabbatch={matlabbatch{1,1},test2.matlabbatch{1,3}};
-            matlabbatch{1,2}.spm.tools.vbm8.tools.defs.field1=cellstr(spm_select('FPList',wdir,'^y_rhead.nii$'));
-            realles=spm_select('FPList',wdir,'^rlesion.*nii');
+            matlabbatch{1,2}.spm.tools.vbm8.tools.defs.field1=cellstr(spm_select('FPList',smri_directory,'^anat2tpl.warp.field.nii$'));
+            realles=spm_select('FPList',wdir,'^rlesionmask.*nii');
             matlabbatch{1,2}.spm.tools.vbm8.tools.defs.images=cellstr(realles);
         end
         
@@ -113,17 +102,17 @@ try
         end
         
         %Locate the warped template space tissue & brain masks
-        GM=spm_read_vols(spm_vol(spm_select('FPList',wdir,'^wrp1.*.nii$')));
-        WM=spm_read_vols(spm_vol(spm_select('FPList',wdir,'^wrp2.*.nii$')));
-        CSF=spm_read_vols(spm_vol(spm_select('FPList',wdir,'^wrp3.*.nii$')));
+        GM=spm_read_vols(spm_vol(spm_select('FPList',smri_directory,'^wrp1.*.nii$')));
+        WM=spm_read_vols(spm_vol(spm_select('FPList',smri_directory,'^wrp2.*.nii$')));
+        CSF=spm_read_vols(spm_vol(spm_select('FPList',smri_directory,'^wrp3.*.nii$')));
         brain=GM+WM+CSF;brain(find(brain<0.5))=0;brain(find(brain))=1;
         brain(isnan(brain))=0;
-        %located the template space ASL file and mask to >5
+        %located the template space ASL file 
         ASLf=cellstr(spm_select('FPList',wdir,'^wr.*qCBF.*nii$'));
         test=cellfun(@isempty,strfind(ASLf,'_PVc'));ASLf(find(test==0))=[];
         ASL=spm_read_vols(spm_vol(char(ASLf)));
         ASL(isnan(ASL))=0;
-        ASL(find(ASL<5))=0;
+        %ASL(find(ASL<5))=0;
         %Smooth tissue files to native resolution of ASL to match degree of
         %smoothness
         sGM=zeros(size(GM));spm_smooth(GM,sGM, nat_res);
@@ -132,7 +121,7 @@ try
         %Limit calculations to GM>=0.3 to minimize elevated values due to division
         %by small numbers
         sGM(find(sGM<0.3))=0;
-        V=spm_vol(spm_select('FPList',wdir,'^wrp1.*.nii$'));
+        V=spm_vol(spm_select('FPList',smri_directory,'^wrp1.*.nii$'));
         [pth,nm,ext]=fileparts(V.fname);
         V.fname=fullfile(normfolder,['wsGM',ext]);
         V.descrip='smoothed GM probability > 0.3';
@@ -177,17 +166,17 @@ try
         
         %Define FOVmask, which combines (brain-lesion), GM>0.3 and ASL>5
         FOV=zeros(size(ASL));GMmask=sGM;GMmask(find(sGM))=1;
-        FOV=GMmask.*brain;FOV(find(ASL<5))=0;
+        FOV=GMmask.*brain;%FOV(find(ASL<5))=0;
         V.dt=[4 0];V.descrip='tpl space FOVmask - 50% tissue & >30% smoothed GM';
         V.fname=fullfile(normfolder,['FOVmask',ext]);spm_create_vol(V);spm_write_vol(V,FOV);
         
         %copy files to ASLoutput
-        copyfile(spm_select('FPList',wdir,'^wrp1.*.nii$'),normfolder);
-        copyfile(spm_select('FPList',wdir,'^wrp2.*.nii$'),normfolder);
-        copyfile(spm_select('FPList',wdir,'^y_rhead.nii$'),normfolder);
+        copyfile(spm_select('FPList',smri_directory,'^wrp1.*.nii$'),normfolder);
+        copyfile(spm_select('FPList',smri_directory,'^wrp2.*.nii$'),normfolder);
+        copyfile(spm_select('FPList',smri_directory,'^anat2tpl.warp.field.nii$'),normfolder);
         
-        copyfile(spm_select('FPList',wdir,'^phead_seg8.txt$'),normfolder);
-        copyfile(spm_select('FPList',wdir,'^head_seg8.mat$'),normfolder);
+        %copyfile(spm_select('FPList',wdir,'^phead_seg8.txt$'),normfolder);
+        %copyfile(spm_select('FPList',wdir,'^head_seg8.mat$'),normfolder);
         
         %cleanup
         rmdir(wdir,'s');
