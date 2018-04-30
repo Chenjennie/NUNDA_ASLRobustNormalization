@@ -181,6 +181,7 @@ try
     copyfile(spm_select('FPList',smri_directory,'^wrp1.*.nii$'),normfolder);
     copyfile(spm_select('FPList',smri_directory,'^wrp2.*.nii$'),normfolder);
     copyfile(spm_select('FPList',smri_directory,'^anat2tpl.warp.field.nii$'),normfolder);
+    copyfile(char(ASLf),normfolder);
     
     %copyfile(spm_select('FPList',wdir,'^phead_seg8.txt$'),normfolder);
     %copyfile(spm_select('FPList',wdir,'^head_seg8.mat$'),normfolder);
