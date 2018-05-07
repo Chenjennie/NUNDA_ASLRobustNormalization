@@ -101,6 +101,7 @@ try
         matlabbatch{1,2}.spm.tools.vbm8.tools.defs.field1=cellstr(spm_select('FPList',smri_directory,'^anat2tpl.warp.field.nii$'));
         realles=spm_select('FPList',wdir,'^rlesionmask.*nii');
         matlabbatch{1,2}.spm.tools.vbm8.tools.defs.images=cellstr(realles);
+    else matlabbatch(2)=[];
     end
     
     try
